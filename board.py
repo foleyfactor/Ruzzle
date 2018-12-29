@@ -1,11 +1,10 @@
 from piece import NormalPiece
-from point_retriever import PointRetriever
 from collections import defaultdict
+from random import choice
 
 class Board(object):
-    def __init__(self, tiles):
-        self.point_retriever = PointRetriever("english")
-        self.tiles = [[NormalPiece(letter, self.point_retriever.get(letter)) for letter in row] for row in tiles]
+    def __init__(self, tiles, language):
+        self.tiles = [[NormalPiece(letter, language.point_values[letter]) for letter in row] for row in tiles]
         self.map = defaultdict(list)
         for i in range(len(tiles)):
             for j in range(len(tiles[0])):
@@ -25,3 +24,9 @@ class Board(object):
 
     def __str__(self):
         return "\n".join([" ".join([str(x) for x in row]) for row in self.tiles])
+
+    @staticmethod
+    def generate_board(language, size=4):
+        board = [[language.generate_letter() for j in range(size)] for i in range(size)]
+        return Board(board, language)
+
