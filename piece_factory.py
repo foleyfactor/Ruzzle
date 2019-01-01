@@ -19,6 +19,8 @@ class PieceDecoratorFactory(object):
         for key in self.props:
             for i in range(self.props[key]):
                 self.decorate_one(board, key)
+        board.clear_connections()
+        board.connect_tiles()
 
 class RoundOnePieceDecoratorFactory(PieceDecoratorFactory):
     def __init__(self):

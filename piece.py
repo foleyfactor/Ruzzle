@@ -18,20 +18,42 @@ class Piece(object):
     def connect(self, other):
         self.neighbours[other.letter].append(other)
         other.neighbours[self.letter].append(self)
+    
+    def clear_connections(self):
+        self.neighbours = defaultdict(list)
 
-    def can_spell(self, word, visited=set()):
+    def generate_score(self, word):
+        best = (0, [])
+        possible = self.generate_score_helper(word)
+        for possibility in possible:
+            score = Piece.compute_point_value(possibility)
+            if score > best[0]:
+                best = (score, possibility)
+        return best
+
+    def generate_score_helper(self, word, visited=set()):
         if self in visited:
-            return False
+            return []
+
         if len(word) == 1:
-            return word == self.letter
+            return [[self]] if word == self.letter else []
+        
+        if word[0] != self.letter:
+            return []
+        
         visited.add(self)
-        ret_val = any([neighbour.can_spell(word[1:], visited) for neighbour in self.neighbours[word[1]]])
+        possibilities_per_tile = [x for x in [neighbour.generate_score_helper(word[1:], visited) for neighbour in self.neighbours[word[1]]] if len(x) > 0]
         visited.remove(self)
-        return ret_val
+
+        found = []
+        for possibilities in possibilities_per_tile:
+            for possibility in possibilities:
+                found.append([self, *possibility])
+        return found
 
     @property
     def value(self):
-        return (lambda x: x*self.multiplier, lambda x: x+self.point_value)
+        return (lambda x: x*self.multiplier, lambda x: x+self.point_value, self)
 
     @staticmethod
     def compute_point_value(pieces):
@@ -44,7 +66,24 @@ class Piece(object):
         for operation_pair in operation_pairs:
             val = operation_pair[0](val)
 
-        return val
+        return val + max((len(pieces) - 4) * 5, 0)
+
+    @staticmethod
+    def from_string(s):
+        const = None
+        if len(s) == 1:
+            const = NormalPiece
+        else:
+            if s[1:].lower() == '2l':
+                const = DoubleLetterPiece
+            if s[1:].lower() == '2w':
+                const = DoubleWordPiece
+            if s[1:].lower() == '3l':
+                const = TripleLetterPiece
+            if s[1:].lower() == '3w':
+                const = TripleWordPiece
+            s = s[0]
+        return lambda x: const(s, x)
     
 # A regular piece
 class NormalPiece(Piece):
@@ -57,12 +96,12 @@ class NormalPiece(Piece):
 # The point value for this piece is twice what it would normally be
 class DoubleLetterPiece(Piece):
     def __init__(self, letter, point_value):
-        super().__init__(letter, 2*point_value, 1, Fore.BLUE)
+        super().__init__(letter, 2*point_value, 1, Fore.GREEN)
 
 # The point value for this piece is thrice what it would normally be
 class TripleLetterPiece(Piece):
     def __init__(self, letter, point_value):
-        super().__init__(letter, 3*point_value, 1, Fore.GREEN)
+        super().__init__(letter, 3*point_value, 1, Fore.BLUE)
 
 # Words including this letter are worth double
 class DoubleWordPiece(Piece):
